@@ -2,48 +2,50 @@
 
 # VibeCoder · Telegram Companion
 
-Маленький загадочный вайбкодер с памятью, внутренними мемами и стикерами по настроению.
+A small, mysterious vibe coder with persistent memory, inside jokes, and mood-based stickers.
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![aiogram](https://img.shields.io/badge/aiogram-3.33-229ED9?logo=telegram&logoColor=white)
 ![SQLite](https://img.shields.io/badge/memory-SQLite%20%2B%20FTS5-003B57?logo=sqlite)
 ![License](https://img.shields.io/badge/license-MIT-5B9A69)
 
-«Хихихи… сейчас напромптим хрумтики в прод 😼»
+“Hehe… let's prompt those snacks into production 😼”
 
 </div>
 
-Бот живёт в одной Telegram-группе. Читает разговор, выбирает момент для ответа, запоминает словечки и иногда добавляет стикер. Запускается вручную на компьютере. Основной генератор — установленный Codex CLI с действующим входом через ChatGPT. Поддерживается и OpenAI API.
+A Telegram companion for one group. It follows conversations, chooses when to reply, learns recurring expressions, and occasionally adds a sticker. Run it manually on your computer. The default generation backend uses an installed Codex CLI signed in with ChatGPT. An OpenAI API backend is also available.
 
-## Что умеет
+The documentation, setup prompts, and management interface are in English. The default personality replies in Russian. Change the conversational language with an owner command such as `/style reply in English`.
 
-- **Участвовать в разговоре.** Базовый шанс ответа 25%. На упоминание и ответ ему реагирует всегда с учётом паузы и доступности сервисов. Реже перебивает короткие реплики и явный диалог других участников.
-- **Собирать мысль целиком.** Несколько соседних сообщений одного человека объединяются перед генерацией. Приём Telegram-сообщений продолжает работать во время ожидания модели.
-- **Помнить после перезапуска.** SQLite хранит текстовую историю, сводки и очередь. Полнотекстовый поиск FTS5 возвращает связанные старые реплики в контекст.
-- **Подхватывать мемы.** Сводка сохраняет характерные словечки, прозвища и контекст шуток. Манеру можно менять через чат.
-- **Выбирать стикеры по настроению.** Бот запоминает присланные стикеры. Эмодзи дают начальный тег, владелец может уточнить теги командой. Стикер сопровождает примерно 30% ответов, если есть подходящий.
-- **Сохранять готовые ответы.** Очередь исходящих сообщений переживает перезапуск. Неоднозначная доставка видна в `/outbox`.
-- **Управляться из Telegram.** Пауза, стиль, частота, состояние и очистка памяти доступны владельцу.
+## Features
 
-## Как устроен
+- **Join the conversation naturally.** A 25% base reply chance, with direct mentions and replies bypassing random selection. Short messages and conversations explicitly addressed to other people receive fewer interruptions.
+- **Follow a complete thought.** Adjacent messages from the same person are combined before generation. Telegram updates continue to be received while the model is working.
+- **Remember across restarts.** SQLite stores the transcript, summaries, and pending jobs. FTS5 retrieves related older messages for the next response.
+- **Pick up inside jokes.** Memory summaries preserve distinctive words, nicknames, and the context behind successful jokes. Participants can request changes to the conversational style.
+- **Match stickers to the mood.** Received stickers become a reusable collection. Emoji provide initial tags, and the owner can adjust them. A suitable sticker accompanies approximately 30% of replies.
+- **Keep prepared replies.** A persistent outbox survives restarts. Ambiguous delivery results are visible through `/outbox`.
+- **Manage the bot from Telegram.** Owner commands control pauses, style, reply frequency, status, and memory deletion.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    TG[Telegram] --> A[aiogram · приём сообщений]
-    A --> DB[(SQLite · история и очередь)]
-    DB --> W[asyncio · обработчик ответов]
-    W --> F[Сводка + FTS5 + свежие реплики]
+    TG[Telegram] --> A[aiogram · update handler]
+    A --> DB[(SQLite · history and queue)]
+    DB --> W[asyncio · reply worker]
+    W --> F[Summary + FTS5 + recent messages]
     F --> C[Codex CLI / OpenAI API]
-    C --> O[(Сохранённый ответ)]
-    O --> D[Доставка и обработка ошибок]
+    C --> O[(Saved reply)]
+    O --> D[Delivery and error handling]
     D --> TG
 ```
 
-По умолчанию используется **GPT-6-Luna**, рассуждение `low`. Доступность зависит от твоего аккаунта Codex. Модель можно заменить параметром `--model`. Каждый ответ и обновление сводки расходуют лимиты выбранного провайдера. Более длинная память увеличивает объём входного контекста.
+The default Codex model is **GPT-6-Luna** with `low` reasoning effort. Availability depends on your Codex account. Override it with `--model`. Replies and summary updates consume the selected provider's usage allowance. Longer memory increases the amount of context sent to the model.
 
-## Быстрый старт · Windows
+## Quick start · Windows
 
-Нужны Python 3.11+, установленный Codex CLI и Telegram-бот от [@BotFather](https://t.me/BotFather).
+Install Python 3.11+, Codex CLI, and create a Telegram bot through [@BotFather](https://t.me/BotFather).
 
 ```powershell
 python -m venv .venv
@@ -51,127 +53,127 @@ python -m venv .venv
 codex login
 ```
 
-1. Создай бота в BotFather через `/newbot`.
-2. Выключи Privacy Mode через `/setprivacy`. Затем добавь бота в группу заново либо назначь его администратором, чтобы он получал обычные сообщения.
-3. Выполни настройку. Скопируй токен, когда программа попросит, и нажми Enter в терминале.
+1. Create your bot with `/newbot` in BotFather.
+2. Disable Privacy Mode with `/setprivacy`. Then remove and re-add the bot to the group, or make it a group administrator, so it can receive regular messages.
+3. Run setup. When prompted, copy the token to your clipboard and press Enter in the terminal.
 
 ```powershell
 .\.venv\Scripts\python.exe -X utf8 setup_bot.py
 ```
 
-ID группы можно узнать отдельным запуском. Он покажет ID в терминале после команды `/chatid@имя_бота` в группе.
+To discover the group ID, use the command below. Send `/chatid@your_bot_username` in the group when prompted. The ID appears in the terminal.
 
 ```powershell
 .\.venv\Scripts\python.exe -X utf8 telegram_bot.py --find-chat
 ```
 
-Запусти **`start-telegram-bot.cmd`**. Токен и группа подставляются из сохранённой настройки. Остановить бота можно через Ctrl+C.
+Run **`start-telegram-bot.cmd`**. It loads the saved bot token and group configuration. Stop it with Ctrl+C.
 
-### Привязка владельца
+### Link the owner
 
-При первом запуске терминал покажет одноразовую команду `/claim …`. Отправь её **в личные сообщения боту** в течение 10 минут. Telegram ID отправителя станет владельцем и сохранится в базе. Код повторно использовать нельзя. Если время истекло, перезапусти бота для нового кода.
+On the first run, the terminal displays a one-time `/claim …` command. Send it **in a private chat with the bot** within 10 minutes. The sender's Telegram ID becomes the owner and is saved in the database. The code can only be used once. Restart the bot to get a new code if it expires.
 
-Вместо привязки можно заранее указать свой числовой ID через `setup_bot.py --owner-id ТВОЙ_ID`. Не подставляй ID другого человека.
+You can also supply your numeric ID during setup with `setup_bot.py --owner-id YOUR_ID`. Use your own Telegram ID.
 
-## Команды
+## Commands
 
-| Команда | Действие |
+| Command | Action |
 | --- | --- |
-| `/help` | Показать справку |
-| `/status` | Режим, модель, очередь, память и число ошибок |
-| `/pause` | Приостановить ответы, продолжая читать и сохранять чат |
-| `/resume` | Продолжить отвечать |
-| `/chance 25` | Базовый шанс ответа от 0 до 100% |
-| `/style говори спокойно и короче` | Сохранить явную настройку владельца |
-| `/style reset` | Вернуть начальную манеру вайбкодера |
-| `/tag смех` | Ответом на стикер задать настроение |
-| `/outbox` | Показать сохранённые ответы с ошибками доставки |
-| `/retry 12` | Вручную повторить отправку ответа №12 |
-| `/forget` | Запросить очистку памяти текущей темы |
+| `/help` | Show the command reference |
+| `/status` | Display mode, model, queue, memory, and error counts |
+| `/pause` | Pause replies while continuing to receive and save messages |
+| `/resume` | Resume replies |
+| `/chance 25` | Set the base reply probability from 0 to 100% |
+| `/style be calmer and more concise` | Save an explicit owner style preference |
+| `/style reset` | Restore the initial vibe coder personality |
+| `/tag laugh` | Reply to a sticker to assign a mood |
+| `/outbox` | List saved replies with delivery errors |
+| `/retry 12` | Manually retry outbox item 12 |
+| `/forget` | Request deletion of the current topic's memory |
 
-Управляющие команды, кроме справки и первоначальной привязки, доступны владельцу. В личке команды относятся к настроенной группе, а `/forget` — к её основной теме. Для другой темы вызови `/forget` внутри неё. Очистка требует второй команды с одноразовым кодом. Она удаляет историю, сводку и исходящую очередь этой темы, сохраняя настройки и коллекцию стикеров.
+Management commands require the linked owner, except help and initial owner registration. Commands sent privately apply to the configured group. A private `/forget` applies to its main topic. To clear another topic, run the command inside that topic. Deletion requires a second command containing a one-time confirmation code. It removes that topic's transcript, summary, and outbox while retaining settings and the sticker collection.
 
-Для `/tag` доступны `смех`, `смущение`, `загадочно`, `поддержка`, `радость`, `обычный`. Можно указать несколько тегов через пробел. Для старых коллекций начальный тег — `обычный`. Стикер выбирается среди подходящих настроению, затем среди нейтральных. Если подходящих нет, отправляется текст.
+Sticker tags are `laugh`, `shy`, `mystery`, `support`, `celebrate`, and `neutral`. Separate multiple tags with spaces. Imported sticker collections start with the `neutral` tag. Selection prefers a matching mood, then neutral stickers. A reply is sent as text when no suitable sticker exists. Russian tag aliases remain supported for existing chats.
 
-Участники могут просить сменить тон в обычном разговоре. Явная настройка владельца `/style` имеет приоритет. Результат адаптации зависит от модели и доступного контекста.
+Participants may request a different tone in ordinary conversation. An explicit owner `/style` setting has priority. Adaptation depends on the model and available context.
 
-## Память и расход лимитов
+## Memory and usage
 
-В базе остаётся полный текст полученных сообщений и ответов. Для генерации передаются сводка старого разговора, до 24 свежих записей и до 4 найденных старых реплик. Сводка обновляется порциями и может терять детали. Поиск работает по словам и префиксам, без внешней векторной базы.
+The database retains the full received text transcript and bot replies. Generation receives a summary of older conversation, up to 24 recent entries, and up to 4 retrieved historical messages. Summaries are updated in batches and may lose details. Retrieval uses word and prefix matching through SQLite FTS5.
 
-Сообщения, пришедшие во время генерации, сохраняются сразу. Обновления старше 3 минут при получении учитываются в памяти, но не вызывают новый ответ. Telegram хранит необработанные обновления ограниченное время, поэтому бот не восстанавливает всю переписку за долгий период выключения. Команды, сообщения других ботов, неподписанные файлы и анонимные сообщения от имени чата не входят в разговорную память.
+Messages arriving during generation are saved immediately. Updates older than 3 minutes when received are retained in memory but do not trigger new replies. Telegram retains unprocessed updates for a limited period, so the bot cannot reconstruct an entire conversation after a long shutdown. Commands, other bots' messages, files without captions, and anonymous messages sent as the chat are excluded from conversational memory.
 
-Настройки по умолчанию:
+Default behavior
 
-| Параметр | Значение |
+| Setting | Value |
 | --- | --- |
-| Модель Codex | `gpt-6-luna`, рассуждение `low` |
-| Базовая вероятность | 25% |
-| Пауза между реакциями | минимум 10 секунд |
-| Ожидание для объединения реплик | 2 секунды |
-| Объединение соседних фрагментов | тот же автор и тема, окно до 8 секунд |
-| Длина текстового ответа | до 1800 символов |
-| Стикер к ответу | вероятность 30% при наличии подходящего |
+| Codex model | `gpt-6-luna`, `low` reasoning |
+| Base reply probability | 25% |
+| Interval between reactions | At least 10 seconds |
+| Message batching delay | 2 seconds |
+| Adjacent fragment grouping | Same author and topic, within an 8-second window |
+| Maximum text reply length | 1800 characters |
+| Accompanying sticker | 30% probability when a suitable sticker exists |
 
-## Доставка и сбои
+## Delivery and recovery
 
-Подготовленный текст записывается в исходящую очередь до отправки. При подтверждённом ограничении Telegram бот ждёт указанное `retry_after`. Ошибки установления соединения повторяются с увеличением паузы, максимум 4 попытки.
+Generated text is stored in the outbox before submission. On an explicit Telegram rate limit, the bot waits for the reported `retry_after` interval. Connection establishment failures use increasing delays, with up to 4 attempts.
 
-Если соединение оборвалось после отправки запроса или Telegram вернул серверную ошибку, результат доставки может быть неизвестен. Такой ответ получает состояние **`uncertain`**. Посмотри чат, затем при необходимости вызови `/retry ID`. Ручной повтор может создать дубль, если первая отправка дошла. Гарантия ровно одной доставки при подобных сбоях отсутствует.
+A connection interrupted after submission, or a Telegram server error, can leave delivery unknown. Such replies receive the **`uncertain`** state. Check the chat, then use `/retry ID` if needed. Manual retries can create duplicates when the first submission succeeded. Exactly-once delivery is not guaranteed for ambiguous failures.
 
-Журнал `telegram-bot.log` содержит категории ошибок и состояния заданий. Тексты сообщений, запросы к модели, токены и одноразовый код привязки в журнал не записываются. Логи ротируются при достижении 1 МБ, сохраняется до трёх архивов. Ошибка генерации отмечается в `/status`, подробная категория есть в журнале. Для нового ответа после ошибки обратись к боту ещё раз.
+`telegram-bot.log` contains error categories and job states. Message text, model prompts, tokens, and owner-registration codes are excluded from the log. Logs rotate at 1 MB with up to three backups. Generation errors appear in `/status`, with categories in the log. Address the bot again to request a fresh reply after a generation error.
 
-## Настройки и данные
+## Configuration and local files
 
-`bot-config.example.json` показывает формат локального `bot-config.json`. Параметры командной строки имеют приоритет над настройкой группы. Также поддерживаются `TELEGRAM_CHAT_ID`, `TELEGRAM_OWNER_ID`, `TELEGRAM_BOT_TOKEN` и `OPENAI_API_KEY`.
+`bot-config.example.json` shows the format for your local `bot-config.json`. Command-line arguments override group configuration. Supported environment variables include `TELEGRAM_CHAT_ID`, `TELEGRAM_OWNER_ID`, `TELEGRAM_BOT_TOKEN`, and `OPENAI_API_KEY`.
 
 ```powershell
 .\.venv\Scripts\python.exe -X utf8 telegram_bot.py --model gpt-6-luna
 .\.venv\Scripts\python.exe -X utf8 telegram_bot.py --mode mentions
 ```
 
-Альтернативный генератор через OpenAI API:
+Alternative OpenAI API backend
 
 ```powershell
 .\.venv\Scripts\python.exe -X utf8 telegram_bot.py --backend api --model gpt-5.4-mini
 ```
 
-По подсказке скопируй API-ключ и нажми Enter, либо заранее задай OPENAI_API_KEY в окружении. Этот режим расходует API-баланс организации ключа. Для API с другой моделью может потребоваться изменить совместимые параметры запроса.
+When prompted, copy the API key and press Enter, or set `OPENAI_API_KEY` in the environment beforehand. This backend uses the API balance associated with that key's organization. Other API models may require compatible request parameters.
 
-| Локальный файл | Содержимое |
+| Local file | Contents |
 | --- | --- |
-| `telegram-token.dpapi` | Токен, зашифрованный Windows для текущего пользователя |
-| `bot-config.json` | ID группы и необязательный ID владельца |
-| `memory-*.sqlite3` | Переписка, сводки, поиск, настройки, стикеры и очередь |
-| `stickers-*.json` | Коллекция из прежних версий, импортируется автоматически |
-| `codex-cli-path.txt` | Необязательный локальный путь к CLI |
-| `telegram-bot.log*` | Диагностика |
+| `telegram-token.dpapi` | Bot token encrypted for the current Windows user |
+| `bot-config.json` | Group ID and optional owner ID |
+| `memory-*.sqlite3` | Transcript, summaries, search index, settings, stickers, and outbox |
+| `stickers-*.json` | Automatically imported legacy sticker collection |
+| `codex-cli-path.txt` | Optional local CLI executable path |
+| `telegram-bot.log*` | Diagnostics |
 
-Существующие таблицы `messages` и `summaries` сохраняются при обновлении. Новые таблицы и поисковый индекс создаются автоматически.
+Existing `messages` and `summaries` tables are preserved during upgrades. Additional tables and the search index are created automatically.
 
-## Работа с данными и доступом
+## Data and access
 
-Сообщи участникам группы, что бот хранит текст, имена и передаёт выбранный контекст OpenAI. База памяти содержит переписку в открытом виде на диске. Windows DPAPI защищает сохранённый токен с привязкой к учётной записи. Для переноса на другой компьютер выполни настройку токена заново.
+Tell group members that the bot stores message text and names and sends selected conversation context to OpenAI. The memory database contains readable conversation data on disk. Windows DPAPI protects the saved token for the current user account. Configure the token again when moving to a different computer.
 
-Codex запускается с отключёнными shell, приложениями, плагинами и веб-поиском, в режиме read-only. Telegram-токен и API-ключи удаляются из окружения дочернего процесса. Разговорные просьбы могут менять манеру бота, административные операции проходят через отдельную проверку Telegram ID.
+Codex runs in read-only mode with shell, apps, plugins, and web search disabled. Telegram tokens and API keys are removed from its child-process environment. Conversational requests can change the persona; administrative actions use a separate Telegram-ID check.
 
-`.gitignore` исключает токены, конфигурацию, базы, стикеры, логи, окружение и временные файлы. Перед публикацией проверь `git status` и содержимое коммита.
+`.gitignore` excludes tokens, local configuration, databases, stickers, logs, virtual environments, and temporary files. Review `git status` and the staged content before publishing.
 
-## Разработка
+## Development
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Тесты используют временные базы и подменённые Telegram/модель. Они проверяют сохранение памяти, поиск, объединение сообщений, права владельца, очередь, настроение стикеров, паузу и обработку неоднозначной доставки. В `.github/workflows/tests.yml` подготовлен запуск тестов на Windows с Python 3.11 и 3.14.
+Tests use temporary databases and mocked Telegram/model calls. They cover persistence, historical retrieval, fragment batching, owner authorization, durable delivery, sticker moods, pausing, and ambiguous send results. Russian-language fixtures exercise the bot's default conversation language. `.github/workflows/tests.yml` runs the suite on Windows with Python 3.11 and 3.14.
 
-| Файл | Назначение |
+| File | Responsibility |
 | --- | --- |
-| `telegram_bot.py` | Точка входа, Codex/API, шифрование токена и совместимость памяти |
-| `telegram_runtime.py` | aiogram, очередь, FTS5, доставка и команды |
-| `setup_bot.py` | Первоначальная настройка |
-| `tests/test_runtime.py` | Проверки поведения |
+| `telegram_bot.py` | Entry point, Codex/API adapters, token encryption, and memory compatibility |
+| `telegram_runtime.py` | aiogram transport, queue, FTS5, delivery, and commands |
+| `setup_bot.py` | First-time configuration |
+| `tests/test_runtime.py` | Behavior tests |
 
-Проект распространяется под лицензией [MIT](LICENSE).
+Released under the [MIT license](LICENSE).
 
-Документация используемых инструментов: [aiogram](https://docs.aiogram.dev/), [Telegram Bot API](https://core.telegram.org/bots/api), [SQLite FTS5](https://www.sqlite.org/fts5.html), [Codex CLI](https://developers.openai.com/codex/cli).
+Documentation: [aiogram](https://docs.aiogram.dev/), [Telegram Bot API](https://core.telegram.org/bots/api), [SQLite FTS5](https://www.sqlite.org/fts5.html), and [Codex CLI](https://developers.openai.com/codex/cli).
