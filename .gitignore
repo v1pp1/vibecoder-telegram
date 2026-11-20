@@ -1,0 +1,36 @@
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+telegram-token.*
+bot-config.json
+bot-config.tmp
+codex-cli-path.txt
+auth.json
+
+# Conversations, persisted jobs, stickers and logs
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.sqlite-*
+*.db
+*.db-*
+stickers-*.json
+*.log
+*.log.*
+*.tmp
+*.lock
+backups/
+
+# Python and local tools
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
